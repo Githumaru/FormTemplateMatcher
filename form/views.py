@@ -4,9 +4,7 @@ from .models import FormTemplate
 from pymongo import MongoClient
 import re
 
-
-
-
+# Function to validate data based on regular expressions for different types
 def validate_data(data):
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     phone_regex = r'^[\s+]7\s\d{3}\s\d{3}\s\d{2}\s\d{2}$'
@@ -20,44 +18,39 @@ def validate_data(data):
     else:
         return 'text'
 
-    
+# Django view for home page
 def home(request):
     return HttpResponse("Welcome to the home page!")
 
-
+# Django view for handling GET requests to get form data
 def get_form_data(request):
+    # Creating a MongoClient
     client = MongoClient('full_form-db-1')
 
     # Select the database and collection
     db = client['forms_database']
     collection = db['form_templates']
+
     if request.method == 'GET':
-
-        # Получаем данные из POST запроса
+        # Get the form data from the request
         form_data = request.GET
-
-
-        # Получаем все шаблоны форм из базы данных
+        # Fetching all form templates from the collection
         all_form_templates = list(collection.find({}))
-
-
-
-        # Преобразуем данные из POST запроса в словарь
+        # Validating the received form data
         received_data = {key: validate_data(value) for key, value in form_data.items()}
-
-
-        # Список для хранения соответствующих шаблонов форм
+        # List to store matching templates
         matching_templates = []
 
-        # Проходим по всем шаблонам форм и проверяем совпадения полей
+        # Loop through each template in the collection
         for template in all_form_templates:
-
+            # Extracting template data without '_id' and 'name'
             template_dict = dict(filter(lambda x: x[0] != '_id' and x[0] != 'name', template.items()))
 
-            # Проверяем соответствие полей шаблона формы и полученных данных
+            # Checking if all items in the received data are present in the template
             if all(items in received_data.items() for items in template_dict.items()):
                 return JsonResponse({'matched_template_name': template['name']})
             
+        # If no matching template found, return received data
         return JsonResponse(received_data)
 
 
