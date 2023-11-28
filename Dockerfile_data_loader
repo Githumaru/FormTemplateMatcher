@@ -1,0 +1,10 @@
+FROM python:3.8
+
+
+RUN pip install pymongo
+
+
+COPY data_loader.py /app/data_loader.py
+
+
+CMD ["python", "/app/data_loader.py"]
